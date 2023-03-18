@@ -21,8 +21,8 @@ jobs:
 
     - name: Set environment variables
       run: |
-        export DOCKER_UID=$(echo ${{ github.event.comment.body }} | sed -nE 's/.*DOCKER_UID=([^[:space:]]+).*/\1/p')
-        export DOCKER_GID=$(echo ${{ github.event.comment.body }} | sed -nE 's/.*DOCKER_GID=([^[:space:]]+).*/\1/p')
+        export DOCKER_UID=$(echo "${{ github.event.comment.body }}" | sed -nE 's/.*DOCKER_UID=([^[:space:]]+).*/\1/p')
+        export DOCKER_GID=$(echo "${{ github.event.comment.body }}" | sed -nE 's/.*DOCKER_GID=([^[:space:]]+).*/\1/p')
         export BUILD_DATE=$(echo date +"%Y-%m-%dT%H:%M:%S:%z")
         export VCS_REF=$(echo git rev-list -1 HEAD)
         export VERSION=$(echo git describe --tags '--match=v*' --dirty)
