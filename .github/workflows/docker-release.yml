@@ -5,35 +5,44 @@ on:
     types: [created]
 
 env:
-  ERIGON_USER: ""
   DOCKER_UID: ""
   DOCKER_GID: ""
+  BUILD_DATE: ""
+  VCS_REF: ""
+  VERSION: ""
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, 'release') && contains(github.event.comment.body, 'ERIGON_USER=') && contains(github.event.comment.body, 'DOCKER_UID=') && contains(github.event.comment.body, 'DOCKER_GID=')
+    if: contains(github.event.comment.body, 'release') && contains(github.event.comment.body, 'DOCKER_UID=') && contains(github.event.comment.body, 'DOCKER_GID=')
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
 
-    - name: Extract commit hash from comment body
-      id: extract_commit_hash
-      run: echo "::set-output name=commit_hash::$(echo ${{ github.event.comment.body }} | sed -nE 's/.*release ([a-f0-9]{40}).*/\1/p')"
-
     - name: Set environment variables
       run: |
-        export ERIGON_USER=$(echo ${{ github.event.comment.body }} | sed -nE 's/.*ERIGON_USER=([^[:space:]]+).*/\1/p')
         export DOCKER_UID=$(echo ${{ github.event.comment.body }} | sed -nE 's/.*DOCKER_UID=([^[:space:]]+).*/\1/p')
         export DOCKER_GID=$(echo ${{ github.event.comment.body }} | sed -nE 's/.*DOCKER_GID=([^[:space:]]+).*/\1/p')
+        export BUILD_DATE=$(echo date +"%Y-%m-%dT%H:%M:%S:%z")
+        export VCS_REF=$(echo git rev-list -1 HEAD)
+        export VERSION=$(echo git describe --tags '--match=v*' --dirty)
+        
 
     - name: Build Docker image
       env:
-        ERIGON_USER: ${{ env.ERIGON_USER }}
         DOCKER_UID: ${{ env.DOCKER_UID }}
         DOCKER_GID: ${{ env.DOCKER_GID }}
+        BUILD_DATE: ${{ env.BUILD_DATE }}
+        VCS_REF: ${{ env.VCS_REF }}
+        VERSION: ${{ env.VERSION }}
       run: |
-        docker build --build-arg ERIGON_USER=${{ env.ERIGON_USER }} --build-arg DOCKER_UID=${{ env.DOCKER_UID }} --build-arg DOCKER_GID=${{ env.DOCKER_GID }} -t jisunglim/erigon:${{ steps.extract_commit_hash.outputs.commit_hash }} .
+        docker build \
+          --build-arg UID=${{ env.DOCKER_UID }} \
+          --build-arg GID=${{ env.DOCKER_GID }} \
+          --build-arg BUILD_DATE=${{ env.BUILD_DATE }} \
+          --build-arg VCS_REF=${{ env.VCS_REF }} \
+          --build-arg VERSION=${{ env.VERSION }} \
+          -t jisunglim/erigon:latest .
 
     - name: Push Docker image
       env:
@@ -41,4 +50,4 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-        docker push jisunglim/erigon:${{ steps.extract_commit_hash.outputs.commit_hash }}
+        docker push jisunglim/erigon:latest
