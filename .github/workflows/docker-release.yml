@@ -36,7 +36,7 @@ jobs:
         VCS_REF: ${{ env.VCS_REF }}
         VERSION: ${{ env.VERSION }}
       run: |
-        docker build \
+        DOCKER_BUILDKIT=1 docker build \
           --build-arg UID=${{ env.DOCKER_UID }} \
           --build-arg GID=${{ env.DOCKER_GID }} \
           --build-arg BUILD_DATE=${{ env.BUILD_DATE }} \
