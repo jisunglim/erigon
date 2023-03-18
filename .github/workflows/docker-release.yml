@@ -4,13 +4,6 @@ on:
   issue_comment:
     types: [created]
 
-env:
-  DOCKER_UID: ""
-  DOCKER_GID: ""
-  BUILD_DATE: ""
-  VCS_REF: ""
-  VERSION: ""
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -26,7 +19,18 @@ jobs:
         export BUILD_DATE=$(echo date +"%Y-%m-%dT%H:%M:%S:%z")
         export VCS_REF=$(echo git rev-list -1 HEAD)
         export VERSION=$(echo git describe --tags '--match=v*' --dirty)
-        
+
+        echo "DOCKER_UID:=$DOCKER_UID"
+        echo "::set-env name=DOCKER_UID::$DOCKER_UID"
+        echo "DOCKER_GID:=$DOCKER_GID"
+        echo "::set-env name=DOCKER_GID::$DOCKER_GID"
+        echo "BUILD_DATE:=$BUILD_DATE"
+        echo "::set-env name=BUILD_DATE::$BUILD_DATE"
+        echo "VCS_REF:=$VCS_REF"
+        echo "::set-env name=VCS_REF::$VCS_REF"
+        echo "VERSION:=$VERSION"
+        echo "::set-env name=VERSION::$VERSION"
+
 
     - name: Build Docker image
       env:
