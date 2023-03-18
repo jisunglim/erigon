@@ -7,45 +7,23 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, 'release') && contains(github.event.comment.body, 'DOCKER_UID=') && contains(github.event.comment.body, 'DOCKER_GID=')
+    if: contains(github.event.comment.body, 'release')
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
 
-    - name: Set environment variables
-      run: |
-        export DOCKER_UID=$(echo "${{ github.event.comment.body }}" | sed -nE 's/.*DOCKER_UID=([^[:space:]]+).*/\1/p')
-        export DOCKER_GID=$(echo "${{ github.event.comment.body }}" | sed -nE 's/.*DOCKER_GID=([^[:space:]]+).*/\1/p')
-        export BUILD_DATE=$(echo date +"%Y-%m-%dT%H:%M:%S:%z")
-        export VCS_REF=$(echo git rev-list -1 HEAD)
-        export VERSION=$(echo git describe --tags '--match=v*' --dirty)
-
-        echo "DOCKER_UID:=$DOCKER_UID"
-        echo "::set-env name=DOCKER_UID::$DOCKER_UID"
-        echo "DOCKER_GID:=$DOCKER_GID"
-        echo "::set-env name=DOCKER_GID::$DOCKER_GID"
-        echo "BUILD_DATE:=$BUILD_DATE"
-        echo "::set-env name=BUILD_DATE::$BUILD_DATE"
-        echo "VCS_REF:=$VCS_REF"
-        echo "::set-env name=VCS_REF::$VCS_REF"
-        echo "VERSION:=$VERSION"
-        echo "::set-env name=VERSION::$VERSION"
-
-
     - name: Build Docker image
-      env:
-        DOCKER_UID: ${{ env.DOCKER_UID }}
-        DOCKER_GID: ${{ env.DOCKER_GID }}
-        BUILD_DATE: ${{ env.BUILD_DATE }}
-        VCS_REF: ${{ env.VCS_REF }}
-        VERSION: ${{ env.VERSION }}
       run: |
+        BUILD_DATE=$(echo date +"%Y-%m-%dT%H:%M:%S:%z")
+        VCS_REF=$(echo git rev-list -1 HEAD)
+        VERSION=$(echo git describe --tags '--match=v*' --dirty)
+
         DOCKER_BUILDKIT=1 docker build \
-          --build-arg UID=${{ env.DOCKER_UID }} \
-          --build-arg GID=${{ env.DOCKER_GID }} \
-          --build-arg BUILD_DATE=${{ env.BUILD_DATE }} \
-          --build-arg VCS_REF=${{ env.VCS_REF }} \
-          --build-arg VERSION=${{ env.VERSION }} \
+          --build-arg UID=${{ vars.DOCKER_UID }} \
+          --build-arg GID=${{ vars.DOCKER_GID }} \
+          --build-arg BUILD_DATE=$BUILD_DATE \
+          --build-arg VCS_REF=$VCS_REF \
+          --build-arg VERSION=$VERSION \
           -t jisunglim/erigon:latest .
 
     - name: Push Docker image
