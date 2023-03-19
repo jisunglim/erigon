@@ -1,18 +1,26 @@
 name: Build and Push Docker Image
 
+run-name: Deploy ${{ github.ref_name }} (By ${{ github.actor }})
+
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to build the Docker image from'
+        type: string
+        required: true
+
+env:
+  TAG: ${{ inputs.tag }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, 'release')
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.pull_request.head.ref }}
+        ref: ${{ inputs.tag }}
         submodules: 'recursive'
 
     - name: Build Docker image
@@ -21,15 +29,14 @@ jobs:
       run: |
         BUILD_DATE=$(date +"%Y-%m-%dT%H:%M:%S:%z")
         VCS_REF=$(git rev-list -1 HEAD)
-        VERSION=$(git describe --tags '--match=v*' --dirty)
 
         docker build \
           --build-arg UID=${{ vars.DOCKER_UID }} \
           --build-arg GID=${{ vars.DOCKER_GID }} \
           --build-arg BUILD_DATE=$BUILD_DATE \
           --build-arg VCS_REF=$VCS_REF \
-          --build-arg VERSION=$VERSION \
-          -t jisunglim/erigon:latest .
+          --build-arg VERSION=${{ inputs.tag }} \
+          -t jisunglim/erigon:${{ inputs.tag }} .
 
     - name: Push Docker image
       env:
@@ -37,4 +44,4 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-        docker push jisunglim/erigon:latest
+        docker push jisunglim/erigon:${{ inputs.tag }}
